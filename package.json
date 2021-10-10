@@ -14,6 +14,7 @@
     "copy-demo-win": "copy .\\dist\\niivue.js .\\demos\\niivue.js",
     "copy-doc": "cp -r ./demos/* ./docs/",
     "copy-doc-win": "robocopy .\\demos .\\docs /E",
+    "build-docs": "npx documentation build src/** -f html -o devdocs -g",
     "test": "npm run build && jest -i",
     "test-win": "npm run build-win && jest -i",
     "pub": "npm publish --access public"
@@ -40,6 +41,7 @@
   "homepage": "https://github.com/niivue/niivue#readme",
   "devDependencies": {
     "buffer": "^6.0.3",
+    "documentation": "^13.2.5",
     "express": "^4.17.1",
     "gl-matrix": "^3.3.0",
     "http-server": "^0.12.3",

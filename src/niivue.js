@@ -116,6 +116,7 @@ export let Niivue = function (opts = {}) {
   this.scene.renderAzimuth = 120;
   this.scene.renderElevation = 15;
   this.scene.crosshairPos = [0.5, 0.5, 0.5];
+  this.scene.location = new Subject();
   this.scene.clipPlane = [0, 0, 0, 0];
   this.scene.mousedown = false;
   this.scene.touchdown = false;
@@ -172,6 +173,51 @@ export let Niivue = function (opts = {}) {
     this.opts[prop] =
       opts[prop] === undefined ? this.defaults[prop] : opts[prop];
   }
+
+  // maping of keys (event strings) to rxjs subjects
+  this.eventsToSubjects = {
+    location: this.scene.location,
+  };
+
+  // rxjs subscriptions. Keeping a reference array like this allows us to unsubscribe later
+  this.subscriptions = [];
+};
+
+// on handles matching event strings (event) with know rxjs subjects within NiiVue.
+// if the event string exists (e.g. 'location') then the corrsponding rxjs subject reference
+// is extracted from this.eventsToSubjects and the callback passed as the second argument to NiiVue.on
+// is added to the subsciptions to the next method. These callbacks are called whenever subject.next is called within
+// various NiiVue methods.
+Niivue.prototype.on = function (event, callback) {
+  let knownEvents = Object.keys(this.eventsToSubjects);
+  if (knownEvents.indexOf(event) == -1) {
+    console.log(`there is no known event ${event}`);
+    return;
+  }
+  let subject = this.eventsToSubjects[event];
+  let subscription = subject.subscribe({
+    next: (data) => callback(data),
+  });
+  this.subscriptions.push({ [event]: subscription });
+};
+
+
+// off unsubscribes events and subjects (the opposite of on)
+Niivue.prototype.off = function (event) {
+  let knownEvents = Object.keys(this.eventsToSubjects);
+  if (knownEvents.indexOf(event) == -1) {
+    console.log(`there is no known event ${event}`);
+    return;
+  }
+  let nsubs = this.subscriptions.length;
+  for (let i = 0; i < nsubs; i++) {
+    let key = Object.keys(this.subscriptions[i])[0];
+    if (key === event) {
+      this.subscriptions[i][event].unsubscribe();
+      this.subscriptions.splice(i, 1);
+      return;
+    }
+  }
 };
 
 // attach the Niivue instance to the webgl2 canvas by element id
@@ -204,12 +250,7 @@ Niivue.prototype.attachTo = function (id) {
 }; // attachTo
 
 Niivue.prototype.syncWith = function (otherNV) {
-  // this.scene.renderAzimuth = 120;
-  // this.scene.renderElevation = 15;
-  // this.scene.crosshairPos = [0.5, 0.5, 0.5];
-  // this.scene.clipPlane = [0, 0, 0, 0];
   this.otherNV = otherNV;
-  // console.log(otherNV);
 };
 
 Niivue.prototype.sync = function () {
@@ -1762,11 +1803,11 @@ Niivue.prototype.mouseClick = function (x, y, posChange = 0, isDelta = true) {
         this.scene.crosshairPos[2] = fracY;
       }
       this.drawScene();
-      this.crosshairPosition$.next([
-        this.scene.crosshairPos[0],
-        this.scene.crosshairPos[1],
-        this.scene.crosshairPos[2],
-      ]);
+      this.scene.location.next({
+        mm: this.frac2mm(this.scene.crosshairPos),
+        vox: this.frac2vox(this.scene.crosshairPos),
+        frac: this.scene.crosshairPos,
+      });
       return;
     } else {
       //if click in slice i

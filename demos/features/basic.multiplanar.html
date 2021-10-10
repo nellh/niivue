@@ -43,8 +43,7 @@
     </section>
 
     <section>
-      <p>available color maps:</p>
-      <p id="colormaps"></p>
+      <p id="crosshairPos"></p>
     </section>
 
     <script src="../niivue.js">
@@ -68,7 +67,13 @@
       nv1.attachTo('gl1')
       nv1.loadVolumes(volumeList1)
       nv1.setSliceType(nv1.sliceTypeMultiplanar)
-      document.getElementById('colormaps').innerText = nv1.colorMaps()
+      
+      function updateCHPos(pos) {
+        document.getElementById('crosshairPos').innerText = `voxel location   x: ${pos.vox[0]}, y: ${pos.vox[1]}, z: ${pos.vox[2]}`
+
+      }
+
+      nv1.on('location', updateCHPos)
 
     </script>
   </body>
